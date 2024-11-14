@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
 import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
-import { sign } from 'hono/jwt'
+import {signupInput} from "@priyanshu082/common"
+import {sign} from "hono/jwt"
 
 
 //typescript saw errror in env files so there is different way of doing env to string
@@ -18,6 +19,14 @@ export const userRouter=new Hono<{
 
 userRouter.post('/signup',async (c) => {
         const body=await c.req.json();
+        const {success}= signupInput.safeParse(body)
+
+        if(!success){
+            c.status(411)
+            return c.json({
+                message:"Inputs are incorrect"
+            })
+        }
           const prisma = new PrismaClient({
           datasourceUrl: c.env.DATABASE_URL,
           }).$extends(withAccelerate())

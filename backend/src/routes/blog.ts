@@ -2,6 +2,8 @@ import { Hono } from 'hono'
 import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
 import { verify } from 'hono/jwt'
+import z from "zod"
+
 
 
 //typescript saw errror in env files so there is different way of doing env to string
@@ -128,7 +130,7 @@ blogRouter.get('/:id', async (c) => {
 })
 
 //pagination should be added here
-blogRouter.get("/all", async (c) => {
+blogRouter.get("/blogs/all", async (c) => {
     try {
         const prisma = new PrismaClient({
             datasourceUrl: c.env.DATABASE_URL
