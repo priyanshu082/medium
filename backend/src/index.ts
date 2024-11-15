@@ -1,21 +1,26 @@
-import { Hono } from 'hono'
-import { userRouter } from './routes/user'
-import { blogRouter } from './routes/blog'
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { userRouter } from './routes/user';
+import { blogRouter } from './routes/blog';
 
+const app = new Hono<{
+  Bindings: {
+    DATABASE_URL: string;
+    JWT_SECRET: string;
+  };
+}>();
 
-//typescript saw errror in env files so there is different way of doing env to string
-// const app = new Hono()
-const app=new Hono<{
- Bindings:{
-  //importing from wrangler.toml not .env
-  DATABASE_URL:string//we have intialized here that it should be string
-  JWT_SECRET:string; 
- }
-}>()
+// Apply the CORS middleware
+app.use(
+  '*',
+  cors({
+    origin: 'http://localhost:5173', // specify your frontend's origin
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 
+app.route('/api/v1/user/', userRouter);
+app.route('/api/v1/blog/', blogRouter);
 
-app.route("/api/v1/user/", userRouter)
-app.route("/api/v1/blog/", blogRouter)
-
-
-export default app
+export default app;
