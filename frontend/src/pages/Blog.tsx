@@ -1,6 +1,6 @@
 import { Appbar } from "../components/Appbar";
+import { BlogSkeleton } from "../components/BlogSkeleton";
 import { FullBlog } from "../components/FullBlog";
-import { Spinner } from "../components/Spinner";
 import { useBlog } from "../hooks";
 import { useParams } from "react-router-dom";
 
@@ -17,10 +17,10 @@ export const Blog = () => {
         return <div>
             <Appbar />
         
-            <div className="h-screen flex flex-col justify-center">
+            <div className="h-screen flex flex-col ">
                 
-                <div className="flex justify-center">
-                    <Spinner />
+                <div className="flex justify-center mt-[50px]">
+                    <BlogSkeleton />
                 </div>
             </div>
         </div>
