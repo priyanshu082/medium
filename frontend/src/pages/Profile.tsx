@@ -7,6 +7,11 @@ import { BlogCard } from "../components/BlogCard";
 export const Profile = () => {
   const {loading,user}=useUser()
 
+  const handleLogOut=()=>{
+    localStorage.removeItem('token')
+    window.location.href='/'
+  }
+
   if(loading || !user){
     return <>
     <Appbar/>
@@ -40,6 +45,9 @@ export const Profile = () => {
               <p className="text-gray-500">@{user.username}</p>
             </div>
           </div>
+            <button onClick={handleLogOut} className="bg-red-600 text-white p-2 rounded-lg mt-[30px]">
+                LogOut
+            </button>
         </div>
 
         {/* Blogs Card */}

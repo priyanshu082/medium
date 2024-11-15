@@ -1,8 +1,11 @@
+import { useUser } from "../hooks";
 import { Avatar } from "./BlogCard"
 import { Link, useNavigate } from "react-router-dom"
 
 export const Appbar = () => {
     const navigate = useNavigate();
+
+    const {user}=useUser()
     
     const handleNewPost = () => {
         const token = localStorage.getItem('token');
@@ -37,7 +40,7 @@ export const Appbar = () => {
                 </button>
                 
                 <div onClick={handleProfile} className="cursor-pointer">
-                    <Avatar size={"big"} name="harkirat" />
+                    <Avatar size={"big"} name={user?.username} />
                 </div>
             </div>
         </div>
