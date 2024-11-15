@@ -1,8 +1,7 @@
 import { Hono } from 'hono'
 import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
-import { verify } from 'hono/jwt'
-import z from "zod"
+import { authMiddleware } from '../authmiddleware'
 
 
 
@@ -20,22 +19,7 @@ export const blogRouter = new Hono<{
 }>()
 
 //all these routes need to verify
-blogRouter.use("/*",async (c, next) => {
-    try {
-        const header =  c.req.header("authorization") || ""
-        const user=await verify(header,c.env.JWT_SECRET)
-        // console.log(user.id)
-        if(user){
-            //@ts-ignore
-            c.set("userId", user.id)
-            await next()
-        }
-    } catch (error) {
-        return c.json({
-            message:"You are not logged in"
-        })
-    }
-})
+blogRouter.use("/*", authMiddleware);
 
 
 blogRouter.post('/', async (c) => {
