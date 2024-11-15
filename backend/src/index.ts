@@ -10,11 +10,11 @@ const app = new Hono<{
   };
 }>();
 
-// Apply the CORS middleware
+// Apply the CORS middleware with access for all origins
 app.use(
   '*',
   cors({
-    origin: 'http://localhost:5173', // specify your frontend's origin
+    origin: '*', // Allow all origins
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
   })
