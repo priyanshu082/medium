@@ -1,5 +1,5 @@
 import { useUser } from "../hooks";
-import { Avatar } from "./BlogCard"
+// import { Avatar } from "./BlogCard"
 import { Link, useNavigate } from "react-router-dom"
 
 export const Appbar = () => {
@@ -39,9 +39,9 @@ export const Appbar = () => {
                     New
                 </button>
                 
-                <div onClick={handleProfile} className="cursor-pointer">
+                {/* <div onClick={handleProfile} className="cursor-pointer">
                     <Avatar size={"big"} name={user?.username} />
-                </div>
+                </div> */}
             </div>
         </div>
     )

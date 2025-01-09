@@ -1,0 +1,23 @@
+{
+  "name": "hotel_booking",
+  "version": "0.0.0",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241230.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "wrangler": "3.100.0"
+  },
+  "private": true,
+  "scripts": {
+    "seed": "tsc -p tsconfig.seed.json && node dist/prisma/seed.js",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.2.0",
+    "@prisma/extension-accelerate": "^1.2.1",
+    "hono": "^4.6.16",
+    "prisma": "^6.2.0"
+  }
+}

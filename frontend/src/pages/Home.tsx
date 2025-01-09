@@ -1,25 +1,16 @@
-import { Appbar } from '../components/Appbar'
-import { Auth } from '../components/Auth'
-import { useBlogs } from '../hooks'
-import { Blogs } from './Blogs'
+
+// import { Signin } from './Signin'
+import { Appbar } from '@/components/Appbar'
+import SearchRoom from '@/components/SearchRoom'
 
 export const Home = () => {
 
-    const {loading,blogs} = useBlogs()
-
-    if(loading || !blogs){
-        return <>
-        <Appbar />
-        <div className='mt-[-5vw]'>
-
-        <Auth type='signin' />
-        </div>
-        </>
-    }
-
+   
   return (
     <div>
-        <Blogs/>
+      <Appbar/>
+        {/* <Signin/> */}
+        <SearchRoom/>
     </div>
   )
 }

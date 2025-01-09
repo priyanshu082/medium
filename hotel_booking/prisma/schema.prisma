@@ -2,7 +2,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  engineType = "binary"
 }
 
 datasource db {
@@ -39,6 +38,7 @@ enum IdentityType {
   PASSPORT
   NATIONAL_ID
   DRIVER_LICENSE
+  AADHAR_CARD
 }
 
 model User {

@@ -2,83 +2,199 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { BACKEND_URL } from "../config";
 
-export interface BlogInterface {
-  title: string;
-  content: string;
+// Interfaces
+export interface RoomInterface {
   id: string;
-  author: {
-    username: string;
-  };
-  published?:boolean
+  number: string; // Room number as a string (e.g., "101").
+  category: 'STANDARD' | 'DELUXE' | 'SUITE' | 'PRESIDENTIAL'; // Categories in uppercase.
+  capacity: number; // Maximum capacity of the room.
+  pricePerNight: number; // Cost per night.
+  description?: string; // Optional description of the room.
+  status: 'AVAILABLE' | 'OCCUPIED'; // Room availability status.
+  amenities: string[]; // List of amenities as strings (e.g., ["WiFi", "Air Conditioning"]).
+  createdAt: string; // ISO date string of when the room was created.
+  updatedAt: string; // ISO date string of the last update.
+  createdById?: string; // Optional ID of the user who created the room.
+}
+
+
+export interface BookingInterface {
+  id: string;
+  roomId: string;
+  guestName: string;
+  identityCard: string;
+  numberOfGuests: number;
+  checkInDate: string;
+  checkOutDate: string;
+  bookedBy: string;
+  status: 'active' | 'completed' | 'cancelled';
+  room?: RoomInterface;
 }
 
 export interface UserInterface {
   id: string;
-  email: string;
+  role: 'master' | 'admin';
   username: string;
+  email: string;
   name?: string;
-  blogs: BlogInterface[];
+  bookings?: BookingInterface[];
 }
 
-// Hook for fetching a single blog
-export const useBlog = ({ id }: { id: string }) => {
-  const [loading, setLoading] = useState<Boolean>(true);
-  const [blog, setBlog] = useState<BlogInterface>();
+// Hook for fetching total rooms count
+
+interface UseTotalRoomsReturn {
+  totalRooms: any[];
+  loading: boolean;
+  error: Error | null;
+}
+
+export const useTotalRooms = () => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [totalRooms, setTotalRooms] = useState<RoomInterface[]>();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     axios
-      .get(`${BACKEND_URL}/api/v1/blog/${id}`, {
+      .get(`${BACKEND_URL}/api/v1/rooms/total`, {
         headers: {
           Authorization: localStorage.getItem("token"),
         },
       })
       .then((res) => {
-        setBlog(res.data.blog);
+        setTotalRooms(res.data.rooms);
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Error fetching blog:", err);
-        setLoading(false);
-      });
-  }, [id]);
-
-  return {
-    loading,
-    blog,
-  };
-};
-
-// Hook for fetching all blogs
-export const useBlogs = () => {
-  const [loading, setLoading] = useState<Boolean>(true);
-  const [blogs, setBlogs] = useState<BlogInterface[]>([]);
-
-  useEffect(() => {
-    axios
-      .get(`${BACKEND_URL}/api/v1/blog/blogs/all`, {
-        headers: {
-          Authorization:localStorage.getItem("token"),
-        },
-      })
-      .then((res) => {
-        setBlogs(res.data.blogs);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching blogs:", err);
+        console.error("Error fetching total rooms:", err);
+        setError(err.response?.data?.message || "Failed to fetch total rooms");
         setLoading(false);
       });
   }, []);
 
   return {
     loading,
-    blogs,
+    totalRooms,
+    error,
+  };
+};
+
+
+// Hook for fetching a single room
+export const useRoom = ({ id }: { id: string }) => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [room, setRoom] = useState<RoomInterface>();
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    axios
+      .get(`${BACKEND_URL}/api/v1/rooms/${id}`, {
+        headers: {
+          Authorization: localStorage.getItem("token"),
+        },
+      })
+      .then((res) => {
+        setRoom(res.data.room);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching room:", err);
+        setError(err.response?.data?.message || "Failed to fetch room");
+        setLoading(false);
+      });
+  }, [id]);
+
+  return {
+    loading,
+    room,
+    error,
+  };
+};
+
+// Hook for fetching available rooms
+export const useAvailableRooms = ({ 
+  checkInDate, 
+  checkOutDate, 
+  category 
+}: { 
+  checkInDate?: string; 
+  checkOutDate?: string; 
+  category?: string;
+}) => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [rooms, setRooms] = useState<RoomInterface[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!checkInDate) return;
+
+    const queryParams = new URLSearchParams({
+      checkInDate,
+      ...(checkOutDate && { checkOutDate }),
+      ...(category && { category }),
+    });
+
+    axios
+      .get(`${BACKEND_URL}/api/v1/rooms/available?${queryParams}`, {
+        headers: {
+          Authorization: localStorage.getItem("token"),
+        },
+      })
+      .then((res) => {
+        setRooms(res.data.rooms);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching available rooms:", err);
+        setError(err.response?.data?.message || "Failed to fetch available rooms");
+        setLoading(false);
+      });
+  }, [checkInDate, checkOutDate, category]);
+
+  return {
+    loading,
+    rooms,
+    error,
+  };
+};
+
+// Hook for fetching user bookings
+export const useBookings = ({ userId }: { userId?: string } = {}) => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [bookings, setBookings] = useState<BookingInterface[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const url = userId 
+      ? `${BACKEND_URL}/api/v1/bookings/user/${userId}`
+      : `${BACKEND_URL}/api/v1/bookings`;
+
+    axios
+      .get(url, {
+        headers: {
+          Authorization: localStorage.getItem("token"),
+        },
+      })
+      .then((res) => {
+        setBookings(res.data.bookings);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching bookings:", err);
+        setError(err.response?.data?.message || "Failed to fetch bookings");
+        setLoading(false);
+      });
+  }, [userId]);
+
+  return {
+    loading,
+    bookings,
+    error,
   };
 };
 
 // Hook for fetching user data
 export const useUser = () => {
-  const [loading, setLoading] = useState<Boolean>(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [user, setUser] = useState<UserInterface | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -86,13 +202,12 @@ export const useUser = () => {
     const fetchUserData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${BACKEND_URL}/api/v1/user/user`, {
+        const response = await axios.get(`${BACKEND_URL}/api/v1/user/profile`, {
           headers: {
             Authorization: localStorage.getItem("token"),
           },
         });
-        console.log(response.data)
-        setUser(response.data); // Assuming the API returns the user object directly
+        setUser(response.data.user);
       } catch (err: any) {
         console.error("Error fetching user data:", err);
         setError(err.response?.data?.message || "Failed to fetch user data");
@@ -107,6 +222,47 @@ export const useUser = () => {
   return {
     loading,
     user,
+    error,
+  };
+};
+
+// Hook for searching bookings
+export const useBookingSearch = ({ query }: { query: string }) => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [bookings, setBookings] = useState<BookingInterface[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!query.trim()) {
+      setBookings([]);
+      setLoading(false);
+      return;
+    }
+
+    const searchTimeout = setTimeout(() => {
+      axios
+        .get(`${BACKEND_URL}/api/v1/bookings/search?q=${encodeURIComponent(query)}`, {
+          headers: {
+            Authorization: localStorage.getItem("token"),
+          },
+        })
+        .then((res) => {
+          setBookings(res.data.bookings);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error("Error searching bookings:", err);
+          setError(err.response?.data?.message || "Failed to search bookings");
+          setLoading(false);
+        });
+    }, 300); // Debounce search requests
+
+    return () => clearTimeout(searchTimeout);
+  }, [query]);
+
+  return {
+    loading,
+    bookings,
     error,
   };
 };
