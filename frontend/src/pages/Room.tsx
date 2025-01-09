@@ -22,7 +22,7 @@ export const RoomDetails = () => {
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/booking', {
+      const response = await fetch('/api/v1/bookings/bookingRoom', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,15 +49,45 @@ export const RoomDetails = () => {
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error loading room details: {error}</div>;
   if (!room) return <div>Room not found</div>;
+  console.log(room)
 
   return (
     <div>
-      <Appbar />
-      <div className="max-w-4xl mx-auto p-4">
+     <Appbar />
+      <div className="max-w-8xl mx-auto p-4">
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h1 className="text-2xl font-bold mb-4">Room {room.number}</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold mb-2 w-[80vw]">Current Bookings</h2>
+                {room.bookings && room.bookings.length > 0 ? (
+                  <div className="space-y-2">
+                    {room.bookings?.map((booking) => (
+                      <div key={booking.id} className="border rounded p-3">
+                        <p className="font-medium">{booking.guestName}</p>
+                        <p className="text-sm text-gray-600">
+                          Check-in: {new Date(booking.checkInDate).toLocaleDateString()}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Check-out: {new Date(booking.checkOutDate).toLocaleDateString()}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          ID: {booking.identityCard}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Guests: {booking.numberOfGuests}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Status: {booking.status}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No current bookings</p>
+                )}
+              </div>
               <p className="text-gray-600 mb-2">Category: {room.category}</p>
               <p className="text-gray-600 mb-2">Capacity: {room.capacity} guests</p>
               <p className="text-gray-600 mb-2">Status: {room.status}</p>

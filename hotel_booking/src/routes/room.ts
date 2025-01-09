@@ -25,22 +25,31 @@ roomRouter.get('/total', async (c) => {
             datasourceUrl: c.env.DATABASE_URL,
         }).$extends(withAccelerate());
 
-        // Try to explicitly connect
+        // Explicitly connect
         await prisma.$connect();
         console.log('Connected to database');
 
-        const rooms = await prisma.room.findMany();
+        // Fetch rooms along with their bookings
+        const rooms = await prisma.room.findMany({
+            include: {
+                bookings: true, // Include bookings for each room
+            },
+        });
+
         console.log('Rooms found:', rooms.length);
 
         return c.json({
-            rooms: rooms
+            rooms,
         });
     } catch (error) {
-        console.error("Detailed error:", error);
-        return c.json({
-            message: "Error fetching rooms",
-            error: error instanceof Error ? error.message : "Unknown error"
-        }, 500);
+        console.error('Detailed error:', error);
+        return c.json(
+            {
+                message: 'Error fetching rooms',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            },
+            500
+        );
     } finally {
         // Always disconnect
         if (prisma) {
@@ -48,6 +57,7 @@ roomRouter.get('/total', async (c) => {
         }
     }
 });
+
 
 // Protected routes
 // roomRouter.use('/*', authMiddleware);
@@ -172,14 +182,6 @@ roomRouter.get('/:id', async (c) => {
                     where: {
                         status: { in: ['CONFIRMED', 'CHECKED_IN'] }
                     },
-                    select: {
-                        id: true,
-                        guestName: true,
-                        numberOfGuests: true,
-                        checkInDate: true,
-                        checkOutDate: true,
-                        status: true
-                    }
                 }
             }
         });

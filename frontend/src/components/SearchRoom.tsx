@@ -1,142 +1,189 @@
-import React, { useState } from 'react';
-import { useTotalRooms } from '@/hooks';
-import { RoomInterface } from '@/hooks';
-import { Link } from 'react-router-dom';
-const SearchRoom = () => {
-  const { totalRooms, loading, error } = useTotalRooms();
-  const [searchParams, setSearchParams] = useState({
-    checkInDate: '',
-    checkOutDate: '',
-    category: '',
-    guests: '',
+import React, { useState, useEffect } from "react";
+import { useTotalRooms } from "@/hooks";
+// import { Appbar } from "@/components/Appbar";
+import { Link } from "react-router-dom";
+import { RoomInterface } from "@/hooks";
+
+interface BookingFormData {
+  checkIn: string;
+  checkOut: string;
+  numberOfGuests: number;
+}
+
+export const SearchRoom = () => {
+  const { room , loading, error } = useTotalRooms(); // Changed from { rooms, loading, error }
+//   console.log(room);
+  const [availableRooms, setAvailableRooms] = useState<RoomInterface[]>([]);
+  const [bookingData, setBookingData] = useState({
+    checkIn: "",
+    checkOut: "",
+    numberOfGuests: 0,
   });
 
-  const [filteredRooms, setFilteredRooms] = useState<RoomInterface[]>(totalRooms || []);
-
-  React.useEffect(() => {
-    if (totalRooms) {
-      setFilteredRooms(totalRooms);
+  // Function to filter available rooms based on booking data
+  const filterAvailableRooms = (
+    rooms: RoomInterface[],
+    bookingData: BookingFormData
+  ) => {
+    if (!bookingData.checkIn || !bookingData.checkOut) {
+      return rooms; // If no dates are provided, return all rooms
     }
-  }, [totalRooms]);
+    console.log("in filter function");
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+    const checkIn = new Date(bookingData.checkIn);
+    const checkOut = new Date(bookingData.checkOut);
 
-    if (Array.isArray(totalRooms)) {
-      const filtered = totalRooms.filter((room) => {
-        const isCategoryMatch =
-          !searchParams.category || room.category === searchParams.category;
-        const isGuestMatch =
-          !searchParams.guests || room.capacity >= Number(searchParams.guests);
-        const isAvailable =
-          room.status === 'AVAILABLE' || room.status === 'OCCUPIED'; // Include all for display
 
-        return isCategoryMatch && isGuestMatch && isAvailable;
-      });
-      setFilteredRooms(filtered);
-    }
-  };
+    return rooms.filter((room) => {
+        // Skip rooms with no capacity for requested guests
+        if (room.capacity < bookingData.numberOfGuests) {
+            return false;
+        }
+        
+      
+        //here is the issue it is skiipping all the rooms even thought the rooms has bookings
+        
+        // If room has no bookings, it's available
+        if (!room.bookings || room.bookings.length === 0) {
+            return true;
+        }
+         console.log(room.number);
+        
 
-  const groupByCategory = (rooms: RoomInterface[]) => {
-    const categories = ['STANDARD', 'DELUXE', 'SUITE', 'PRESIDENTIAL'];
-    const grouped: { [key: string]: RoomInterface[] } = {};
+      // Calculate total guests from overlapping bookings
+      let guestsInOverlappingBookings = 0;
 
-    categories.forEach((category) => {
-      grouped[category] = rooms.filter((room) => room.category === category);
+      // Check each booking for date overlap
+      for (const booking of room.bookings) {
+        const bookingStart = new Date(booking.checkInDate);
+        const bookingEnd = new Date(booking.checkOutDate);
+
+        // If dates overlap, add guests from that booking
+        if ((checkIn >= bookingStart && checkIn < bookingEnd) ||
+            (checkOut > bookingStart && checkOut <= bookingEnd) ||
+            (checkIn <= bookingStart && checkOut >= bookingEnd)) {
+          // Convert booking.numberOfGuests to integer before adding
+          guestsInOverlappingBookings += parseInt(String(booking.numberOfGuests));
+        }
+      }
+
+      // Convert all numbers to integers for consistent comparison
+      const totalGuests = guestsInOverlappingBookings + parseInt(String(bookingData.numberOfGuests));
+      const roomCapacity = parseInt(String(room.capacity));
+      
+      console.log("Total guests:", totalGuests, "Room capacity:", roomCapacity);
+      return totalGuests <= roomCapacity;
     });
-
-    return grouped;
   };
 
-  const groupedRooms = groupByCategory(filteredRooms);
+  // Update available rooms whenever bookingData changes
+  useEffect(() => {
+    if (!loading && room) {
+      setAvailableRooms(filterAvailableRooms(room, bookingData));
+    }
+  }, [room, bookingData]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setBookingData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error loading rooms: {error}</div>;
+  if (!room) return <div>No rooms available</div>;
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Search Room</h1>
+    <div>
+      {/* <Appbar /> */}
+      <div className="max-w-8xl mx-auto p-4">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h1 className="text-2xl font-bold mb-4">Room Availability</h1>
 
-      {/* Search Form */}
-      <form className="mb-6" onSubmit={handleSearch}>
-        <div className="flex flex-wrap gap-4 mb-4">
-          <input
-            type="date"
-            className="border p-2 rounded w-full md:w-1/4"
-            placeholder="Check-in Date"
-            value={searchParams.checkInDate}
-            onChange={(e) =>
-              setSearchParams({ ...searchParams, checkInDate: e.target.value })
-            }
-          />
-          <input
-            type="date"
-            className="border p-2 rounded w-full md:w-1/4"
-            placeholder="Check-out Date"
-            value={searchParams.checkOutDate}
-            onChange={(e) =>
-              setSearchParams({ ...searchParams, checkOutDate: e.target.value })
-            }
-          />
-          <select
-            className="border p-2 rounded w-full md:w-1/4"
-            value={searchParams.category}
-            onChange={(e) =>
-              setSearchParams({ ...searchParams, category: e.target.value })
-            }
-          >
-            <option value="">Category</option>
-            <option value="STANDARD">Standard</option>
-            <option value="DELUXE">Deluxe</option>
-            <option value="SUITE">Suite</option>
-            <option value="PRESIDENTIAL">Presidential</option>
-          </select>
-          <input
-            type="number"
-            className="border p-2 rounded w-full md:w-1/4"
-            placeholder="Number of Guests"
-            value={searchParams.guests}
-            onChange={(e) =>
-              setSearchParams({ ...searchParams, guests: e.target.value })
-            }
-          />
-        </div>
-        <button className="bg-blue-500 text-white px-4 py-2 rounded" type="submit">
-          Search
-        </button>
-      </form>
-
-      {/* Grouped Room Cards */}
-      {Object.keys(groupedRooms).map((category) => (
-        <div key={category} className="mb-8 border-2 border-blue-600 rounded-lg p-4 bg-blue-100">
-          <h2 className="text-xl font-bold mb-4 text-blue-600">{category}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {groupedRooms[category].map((room) => (
-              <div
-                key={room.id}
-                className={`border rounded-lg p-2 shadow hover:shadow-lg transition flex flex-row justify-between items-center ${
-                  room.status === 'AVAILABLE' ? 'border-green-500 bg-green-100' : 'border-red-500 bg-red-100'
-                }`}
+          <form className="space-y-4">
+            <div>
+              <label
+                htmlFor="checkIn"
+                className="block text-sm font-medium text-gray-700"
               >
-                <h3 className="text-lg font-bold mb-2">Room {room.number}</h3>
-                <p className="text-gray-600 mb-2">Capacity: {room.capacity} guests</p>
-                
-                
-                {room.status === 'AVAILABLE' && (
-                    //add functionality in button when i click it, it will redirect to booking page
+                Check-In Date
+              </label>
+              <input
+                type="date"
+                id="checkIn"
+                name="checkIn"
+                value={bookingData.checkIn}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="checkOut"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Check-Out Date
+              </label>
+              <input
+                type="date"
+                id="checkOut"
+                name="checkOut"
+                value={bookingData.checkOut}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="numberOfGuests"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Number of Guests
+              </label>
+              <input
+                type="number"
+                id="numberOfGuests"
+                name="numberOfGuests"
+                value={bookingData.numberOfGuests}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                min="1"
+                required
+              />
+            </div>
+          </form>
+
+          <div className="mt-6">
+            <h2 className="text-xl font-semibold mb-2">Available Rooms</h2>
+            {availableRooms.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {availableRooms.map((room) => (
+                  <div key={room.id} className="border rounded p-4 flex flex-row justify-between">
+                    <h3 className="text-lg font-bold">Room {room.number}</h3>
+                    <p>Category: {room.category}</p>
+                    <p>Capacity: {room.capacity} guests</p>
+                    {/* <p>Price per night: ${room.pricePerNight}</p> */}
+                    {/* <p>Amenities: {room.amenities.join(", ")}</p> */}
                     <Link to={`/room/${room.id}`}>
                   <button className="bg-green-500 text-white px-4 py-2 rounded">
                     Book Now
                   </button>
                   </Link>
-                )}
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <p className="text-gray-500">No rooms available for the selected dates.</p>
+            )}
           </div>
         </div>
-      ))}
+      </div>
     </div>
   );
 };
-
-export default SearchRoom;

@@ -29,7 +29,7 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
             setAlertMessage("Login Successful");
             setAlertType(alertTypeEnum.success)
             setTimeout(() => {
-                navigate("/blogs");
+                navigate("/");
             }, 2000);
         } catch (e) {
             //@ts-ignore

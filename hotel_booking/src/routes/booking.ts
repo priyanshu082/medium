@@ -28,48 +28,81 @@ function calculateNights(checkIn: Date, checkOut: Date): number {
 }
 
 // Create booking
-bookingRouter.post('/booking', async (c) => {
+bookingRouter.post('/bookingRoom', async (c) => {
     try {
         const body = await c.req.json();
-        const userId = c.get('userId');
 
         // Initialize Prisma client
         const prisma = new PrismaClient({
             datasourceUrl: c.env.DATABASE_URL,
         }).$extends(withAccelerate());
 
-        // Check room availability
+        // Check if the room exists and fetch bookings
         const room = await prisma.room.findUnique({
             where: { id: body.roomId },
             include: {
                 bookings: {
                     where: {
                         status: { in: ['CONFIRMED', 'CHECKED_IN'] },
-                        checkInDate: { lte: new Date(body.checkOutDate) },
-                        checkOutDate: { gte: new Date(body.checkInDate) },
+                        OR: [
+                            {
+                                checkInDate: { lte: new Date(body.checkOutDate) },
+                                checkOutDate: { gte: new Date(body.checkInDate) },
+                            },
+                        ],
                     },
                 },
             },
         });
 
         if (!room) {
-            return c.json({ message: 'Room not found' }, 404);
+            return c.json(
+                {
+                    message: 'Room not found',
+                    roomId: body.roomId,
+                },
+                404
+            );
         }
 
-        const currentOccupancy = room.bookings.reduce(
-            (sum, booking) => sum + booking.numberOfGuests,
-            0
-        );
+        // Ensure the room has sufficient capacity
+        const checkIn = new Date(body.checkInDate);
+        const checkOut = new Date(body.checkOutDate);
+        const dateOccupancyMap = new Map();
 
-        if (currentOccupancy + body.numberOfGuests > room.capacity) {
-            return c.json({ message: 'Room capacity exceeded' }, 400);
+        for (let day = new Date(checkIn); day < checkOut; day.setDate(day.getDate() + 1)) {
+            const currentDate = new Date(day);
+
+            const guestsOnThisDay = room.bookings.reduce((sum, booking) => {
+                const bookingCheckIn = new Date(booking.checkInDate);
+                const bookingCheckOut = new Date(booking.checkOutDate);
+
+                if (currentDate >= bookingCheckIn && currentDate < bookingCheckOut) {
+                    return sum + booking.numberOfGuests;
+                }
+                return sum;
+            }, 0);
+
+            const isAvailable = guestsOnThisDay + body.numberOfGuests <= room.capacity;
+
+            if (!isAvailable) {
+                return c.json(
+                    {
+                        message: `Room not available for date ${currentDate.toISOString().split('T')[0]}`,
+                        currentOccupancy: guestsOnThisDay,
+                        roomCapacity: room.capacity,
+                        remainingCapacity: room.capacity - guestsOnThisDay,
+                    },
+                    400
+                );
+            }
         }
 
-        // Create booking
+        // Create the booking
         const booking = await prisma.booking.create({
             data: {
                 roomId: body.roomId,
-                bookedById: userId,
+                bookedById: body.userId,
                 guestName: body.guestName,
                 identityCard: body.identityCard,
                 identityType: body.identityType,
@@ -85,15 +118,17 @@ bookingRouter.post('/booking', async (c) => {
                 contactNumber: body.contactNumber,
                 contactEmail: body.contactEmail,
                 specialRequests: body.specialRequests,
+                status: 'CONFIRMED', // Default to CONFIRMED after successful booking
+            },
+            include: {
+                room: true, // Include room details in the response
             },
         });
 
-        // Update room's remaining capacity
-        const updatedRoom = await prisma.room.update({
+        // Fetch the updated room details, including its bookings
+        const updatedRoom = await prisma.room.findUnique({
             where: { id: body.roomId },
-            data: {
-                capacity: room.capacity - (currentOccupancy + body.numberOfGuests),
-            },
+            include: { bookings: true },
         });
 
         return c.json({ booking, updatedRoom });
@@ -102,11 +137,13 @@ bookingRouter.post('/booking', async (c) => {
         return c.json(
             {
                 message: 'Error creating booking',
+                error: error instanceof Error ? error.message : 'Unknown error',
             },
             500
         );
     }
 });
+
 
 
 // Search bookings
@@ -147,42 +184,42 @@ const prisma = new PrismaClient({
 });
 
 // Get single booking
-bookingRouter.get('/:id', async (c) => {
-    try {
-        const { id } = c.req.param();
+// bookingRouter.get('/:id', async (c) => {
+//     try {
+//         const { id } = c.req.param();
 
-        const prisma = new PrismaClient({
-            datasourceUrl: c.env.DATABASE_URL,
-        }).$extends(withAccelerate());
+//         const prisma = new PrismaClient({
+//             datasourceUrl: c.env.DATABASE_URL,
+//         }).$extends(withAccelerate());
 
-        const booking = await prisma.booking.findUnique({
-            where: { id },
-            include: {
-                room: true,
-                bookedBy: {
-                    select: {
-                        id: true,
-                        username: true,
-                    },
-                },
-            },
-        });
+//         const booking = await prisma.booking.findUnique({
+//             where: { id },
+//             include: {
+//                 room: true,
+//                 bookedBy: {
+//                     select: {
+//                         id: true,
+//                         username: true,
+//                     },
+//                 },
+//             },
+//         });
 
-        if (!booking) {
-            return c.json({ message: 'Booking not found' }, 404);
-        }
+//         if (!booking) {
+//             return c.json({ message: 'Booking not found' }, 404);
+//         }
 
-        return c.json({ booking });
-    } catch (error) {
-        console.error(error);
-        return c.json(
-            {
-                message: 'Error fetching booking',
-            },
-            500
-        );
-    }
-});
+//         return c.json({ booking });
+//     } catch (error) {
+//         console.error(error);
+//         return c.json(
+//             {
+//                 message: 'Error fetching booking',
+//             },
+//             500
+//         );
+//     }
+// });
 
 // Export the router
 

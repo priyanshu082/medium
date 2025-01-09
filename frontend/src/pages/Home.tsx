@@ -1,7 +1,7 @@
 
 // import { Signin } from './Signin'
 import { Appbar } from '@/components/Appbar'
-import SearchRoom from '@/components/SearchRoom'
+import { SearchRoom } from '@/components/SearchRoom'
 
 export const Home = () => {
 

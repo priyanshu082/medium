@@ -4,17 +4,18 @@ import { BACKEND_URL } from "../config";
 
 // Interfaces
 export interface RoomInterface {
-  id: string;
+  id: string; // Unique identifier for the room.
   number: string; // Room number as a string (e.g., "101").
-  category: 'STANDARD' | 'DELUXE' | 'SUITE' | 'PRESIDENTIAL'; // Categories in uppercase.
+  category: 'STANDARD' | 'DELUXE' | 'SUITE'; // Categories in uppercase.
   capacity: number; // Maximum capacity of the room.
   pricePerNight: number; // Cost per night.
   description?: string; // Optional description of the room.
-  status: 'AVAILABLE' | 'OCCUPIED'; // Room availability status.
+  status: 'AVAILABLE' | 'BOOKED' | 'OCCUPIED'; // Room availability and status.
   amenities: string[]; // List of amenities as strings (e.g., ["WiFi", "Air Conditioning"]).
   createdAt: string; // ISO date string of when the room was created.
   updatedAt: string; // ISO date string of the last update.
-  createdById?: string; // Optional ID of the user who created the room.
+  createdById: string; // ID of the user who created the room.
+  bookings?: BookingInterface[]; // Optional list of associated bookings.
 }
 
 
@@ -23,13 +24,21 @@ export interface BookingInterface {
   roomId: string;
   guestName: string;
   identityCard: string;
+  identityType: 'PASSPORT' | 'ID_CARD' | 'DRIVER_LICENSE'; // Assuming the types for identity
   numberOfGuests: number;
   checkInDate: string;
   checkOutDate: string;
-  bookedBy: string;
-  status: 'active' | 'completed' | 'cancelled';
-  room?: RoomInterface;
+  totalAmount: number; // Added the total amount field
+  status: 'PENDING' | 'CONFIRMED' | 'CHECKED_IN' | 'CANCELLED'; // Booking status as per the Prisma model
+  specialRequests?: string; // Optional field
+  contactNumber: string;
+  contactEmail: string;
+  createdAt: string; // Should be a string representation of Date
+  updatedAt: string; // Should be a string representation of Date
+  bookedBy: string; // user ID who booked
+  room?: RoomInterface; // Room object, if included
 }
+
 
 export interface UserInterface {
   id: string;
@@ -50,7 +59,7 @@ interface UseTotalRoomsReturn {
 
 export const useTotalRooms = () => {
   const [loading, setLoading] = useState<boolean>(true);
-  const [totalRooms, setTotalRooms] = useState<RoomInterface[]>();
+  const [room, setRoom] = useState<RoomInterface[]>();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,7 +70,7 @@ export const useTotalRooms = () => {
         },
       })
       .then((res) => {
-        setTotalRooms(res.data.rooms);
+        setRoom(res.data.rooms);
         setLoading(false);
       })
       .catch((err) => {
@@ -73,7 +82,7 @@ export const useTotalRooms = () => {
 
   return {
     loading,
-    totalRooms,
+    room,
     error,
   };
 };
