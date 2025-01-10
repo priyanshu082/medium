@@ -112,8 +112,8 @@ export const SearchRoom = () => {
       <div className="container mx-auto px-4 py-8">
         <Card className="shadow-lg">
           <CardHeader>
-            <h1 className="text-3xl font-bold tracking-tight">Search Available Rooms</h1>
-            <p className="text-sm text-muted-foreground">Find and book your perfect room</p>
+            <h1 className=" text-xl md:text-3xl font-bold tracking-tight">Search Available Rooms</h1>
+            <p className=" text-xsm md:text-sm text-muted-foreground">Find and book your perfect room</p>
           </CardHeader>
           <CardContent>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
