@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { BookingInterface } from '@/hooks';
 import { BACKEND_URL } from '@/config';
 import { Appbar } from '@/components/Appbar';
+import { toast, Toaster } from 'react-hot-toast';
+import { Spinner } from '@/components/Spinner';
 
 const BookingPage = () => {
   const { id } = useParams();
@@ -15,19 +17,19 @@ const BookingPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAdmin] = useState(localStorage.getItem('role') === 'MASTER');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchBookingDetails = async () => {
       try {
         setLoading(true);
-        // The API endpoint should be /api/bookings/details/${id} based on the backend route
         const response = await axios.get(`${BACKEND_URL}/api/v1/bookings/details/${id}`, {
           headers: {
             'Content-Type': 'application/json',
             userId: localStorage.getItem('id') || ''
           }
         });
-        console.log('Response:', response.data); // Log full response for debugging
+        console.log('Response:', response.data);
         
         if (!response.data.success) {
           throw new Error(response.data.message || 'Failed to fetch booking');
@@ -35,7 +37,7 @@ const BookingPage = () => {
         
         setBooking(response.data.booking);
       } catch (err:any) {
-        console.error('Error details:', err); // Log error for debugging
+        console.error('Error details:', err);
         setError(err.response?.data?.message || 'Error fetching booking details');
       } finally {
         setLoading(false);
@@ -49,31 +51,85 @@ const BookingPage = () => {
 
   const handleCancelBooking = async () => {
     try {
+      setIsLoading(true);
       const response = await axios.put(
-        `${BACKEND_URL}/api/v1/bookings/${id}/cancel`,
+        `${BACKEND_URL}/api/v1/bookings/cancel/${id}`,
         {},
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: localStorage.getItem('token') || '',
+            userId: localStorage.getItem('id') || '',
           },
         }
       );
 
       if (response.data.success) {
-        // Update the booking status locally
         setBooking(prev => prev ? {...prev, status: 'CANCELLED'} : null);
+        toast.success("Booking cancelled successfully!");
       }
     } catch (err: any) {
       console.error('Error cancelling booking:', err);
-      alert(err.response?.data?.message || 'Failed to cancel booking');
+      toast.error(err.response?.data?.message || 'Failed to cancel booking');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCheckIn = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.put(
+        `${BACKEND_URL}/api/v1/bookings/checkin/${id}`,
+        {},
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            userId: localStorage.getItem('id') || '',
+          },
+        }
+      );
+
+      if (response.data.success) {
+        setBooking(prev => prev ? {...prev, status: 'CHECKED_IN'} : null);
+        toast.success("Check-in completed successfully!");
+      }
+    } catch (err: any) {
+      console.error('Error checking in:', err);
+      toast.error(err.response?.data?.message || 'Failed to check in');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCheckOut = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.post(
+        `${BACKEND_URL}/api/v1/bookings/checkout/${id}`,
+        {},
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            userId: localStorage.getItem('id') || '',
+          },
+        }
+      );
+
+      if (response.data.success) {
+        setBooking(prev => prev ? {...prev, status: 'CHECKED_OUT'} : null);
+        toast.success("Check-out completed successfully!");
+      }
+    } catch (err: any) {
+      console.error('Error checking out:', err);
+      toast.error(err.response?.data?.message || 'Failed to check out');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-      
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
       </div>
     );
@@ -82,7 +138,6 @@ const BookingPage = () => {
   if (error) {
     return (
       <div className="min-h-screen p-6">    
-       
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
@@ -103,6 +158,7 @@ const BookingPage = () => {
   return (
     <>
     <Appbar />
+    <Toaster position="top-center" />
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto space-y-6 mt-2">
         {/* Booking Header */}
@@ -111,7 +167,6 @@ const BookingPage = () => {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Booking Details</h1>
               <p className="text-sm text-gray-500 mt-1">Booking ID: {booking.id}</p>
-              
             </div>
             <Badge className={
               booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
@@ -172,8 +227,6 @@ const BookingPage = () => {
               <p className="text-sm text-gray-500">Category</p>
               <p className="font-medium">{booking.room?.category ?? 'N/A'}</p>
             </div>
-           
-            
           </CardContent>
         </Card>
 
@@ -206,21 +259,75 @@ const BookingPage = () => {
 
         {/* Booking Actions */}
         <div className="flex justify-end space-x-4">
-          <Button variant="outline" onClick={() => window.history.back()}>
+          <Button 
+            variant="outline" 
+            onClick={() => window.history.back()}
+            disabled={isLoading}
+          >
             Go Back
           </Button>
           {booking.status === 'PENDING' && (
-            <Button className="bg-green-600 hover:bg-green-700">
-              Confirm Booking
+            <Button 
+              className="bg-green-600 hover:bg-green-700"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Spinner />
+                  Confirming...
+                </>
+              ) : (
+                'Confirm Booking'
+              )}
             </Button>
           )}
-          {isAdmin && booking.status !== 'CANCELLED' && (
+          {booking.status === 'CONFIRMED' && (
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={handleCheckIn}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Spinner />
+                  Checking In...
+                </>
+              ) : (
+                'Check In'
+              )}
+            </Button>
+          )}
+          {booking.status === 'CHECKED_IN' && (
+            <Button 
+              className="bg-purple-600 hover:bg-purple-700"
+              onClick={handleCheckOut}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Spinner />
+                  Checking Out...
+                </>
+              ) : (
+                'Check Out'
+              )}
+            </Button>
+          )}
+          {isAdmin && booking.status !== 'CANCELLED' && booking.status !== 'CHECKED_OUT' && (
             <Button 
               variant="destructive" 
               onClick={handleCancelBooking}
               className="bg-red-600 hover:bg-red-700"
+              disabled={isLoading}
             >
-              Cancel Booking
+              {isLoading ? (
+                <>
+                  <Spinner  />
+                  Cancelling...
+                </>
+              ) : (
+                'Cancel Booking'
+              )}
             </Button>
           )}
         </div>

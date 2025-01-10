@@ -24,7 +24,7 @@ export interface BookingInterface {
   roomId: string;
   guestName: string;
   identityCard: string;
-  identityType: 'PASSPORT' | 'ID_CARD' | 'DRIVER_LICENSE'; // Assuming the types for identity
+  identityType: 'PASSPORT' | 'NATIONAL_ID' | 'DRIVER_LICENSE' | 'AADHAR_CARD';
   numberOfGuests: number;
   checkInDate: string;
   checkOutDate: string;
@@ -96,9 +96,9 @@ export const useRoom = ({ id }: { id: string }) => {
 
   useEffect(() => {
     axios
-      .get(`${BACKEND_URL}/api/v1/rooms/${id}`, {
+      .get(`${BACKEND_URL}/api/v1/rooms/roomDetails/${id}`, {
         headers: {
-          Authorization: localStorage.getItem("id"),
+          userId: localStorage.getItem("id"),
         },
       })
       .then((res) => {

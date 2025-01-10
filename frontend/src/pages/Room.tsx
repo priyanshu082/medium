@@ -1,18 +1,32 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useRoom } from '@/hooks';
 import { Appbar } from '@/components/Appbar';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import axios from 'axios';
+import { BACKEND_URL } from '@/config';
+import { Spinner } from '@/components/Spinner';
+import { toast, Toaster } from 'react-hot-toast';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const RoomDetails = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const { room, loading, error } = useRoom({ id: id || "" });
+  const [isBooking, setIsBooking] = useState(false);
 
   const [bookingData, setBookingData] = useState({
-    checkInDate: '',
-    checkOutDate: '',
-    numberOfGuests: 1,
+    checkInDate: searchParams.get('checkIn') || '',
+    checkOutDate: searchParams.get('checkOut') || '',
+    numberOfGuests: Number(searchParams.get('numberOfGuests')) || 1,
     guestName: '',
     identityCard: '',
     identityType: '',
@@ -23,38 +37,42 @@ export const RoomDetails = () => {
 
   const handleBookingSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsBooking(true);
     try {
-      const response = await fetch('/api/v1/bookings/bookingRoom', {
-        method: 'POST',
+      const response = await axios.post(`${BACKEND_URL}/api/v1/bookings/bookingRoom`, {
+        roomId: id,
+        ...bookingData
+      }, {
         headers: {
           'Content-Type': 'application/json',
-          userId: localStorage.getItem('id') || '', // Replace with actual user ID handling
-        },
-        body: JSON.stringify({
-          roomId: id,
-          ...bookingData,
-        }),
+          'userId': localStorage.getItem('id')
+        }
       });
-      if (response.ok) {
-        alert('Booking successful!');
+
+      if (response.status === 200) {
+        toast.success('Booking successful!');
         // Redirect or update UI
-      } else {
-        const errorData = await response.json();
-        alert(`Failed to book room: ${errorData.message}`);
       }
     } catch (error) {
       console.error('Error booking room:', error);
-      alert('Error booking room');
+      if (axios.isAxiosError(error)) {
+        toast.error(`Failed to book room: ${error.response?.data?.message || error.message}`);
+      } else {
+        toast.error('Error booking room');
+      }
+    } finally {
+      setIsBooking(false);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <Spinner/>;
   if (error) return <div>Error loading room details: {error}</div>;
   if (!room) return <div>Room not found</div>;
 
   return (
     <div>
       <Appbar />
+      <Toaster position="top-center" />
       <div className="max-w-8xl mx-auto p-4">
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h1 className="text-2xl font-bold mb-4">Room {room.number}</h1>
@@ -63,25 +81,41 @@ export const RoomDetails = () => {
               <div className="mb-4">
                 <h2 className="text-xl font-semibold mb-2">Current Bookings</h2>
                 {room.bookings && room.bookings.length > 0 ? (
-                  <div className="space-y-2">
-                    {room.bookings?.map((booking) => (
-                      <div key={booking.id} className="border rounded p-3">
-                        <p className="font-medium">{booking.guestName}</p>
-                        <p className="text-sm text-gray-600">
-                          Check-in: {new Date(booking.checkInDate).toLocaleDateString()}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Check-out: {new Date(booking.checkOutDate).toLocaleDateString()}
-                        </p>
-                        <p className="text-sm text-gray-600">ID: {booking.identityCard}</p>
-                        <p className="text-sm text-gray-600">Guests: {booking.numberOfGuests}</p>
-                        <p className="text-sm text-gray-600">Status: {booking.status}</p>
-                        <Button variant="outline" size="sm" className="mt-2  bg-blue-500 text-white">
-                          <Link to={`/booking/${booking.id}`}>View Details</Link>
-                        </Button>
-                    
-                      </div>
-                    ))}
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Guest Name</TableHead>
+                          <TableHead>Check-in</TableHead>
+                          <TableHead>Check-out</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {room.bookings?.map((booking) => (
+                          <TableRow key={booking.id}>
+                            <TableCell>{booking.guestName}</TableCell>
+                            <TableCell>{new Date(booking.checkInDate).toLocaleDateString()}</TableCell>
+                            <TableCell>{new Date(booking.checkOutDate).toLocaleDateString()}</TableCell>
+                            <TableCell>
+                              <span className={`text-sm ${
+                                booking.status === 'CONFIRMED' ? 'text-green-600' :
+                                booking.status === 'CHECKED_IN' ? 'text-blue-600' :
+                                booking.status === 'CHECKED_OUT' ? 'text-gray-600' :
+                                booking.status === 'CANCELLED' ? 'text-red-600' :
+                                'text-yellow-600'
+                              }`}>{booking.status}</span>
+                            </TableCell>
+                            <TableCell>
+                              <Button variant="outline" size="sm" className="bg-blue-500 text-white">
+                                <Link to={`/booking/${booking.id}`}>View Details</Link>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 ) : (
                   <p className="text-gray-500">No current bookings</p>
@@ -121,8 +155,8 @@ export const RoomDetails = () => {
                     >
                       <option value="">Select</option>
                       <option value="PASSPORT">Passport</option>
-                      <option value="DRIVER_LICENSE">Driver's License</option>
                       <option value="NATIONAL_ID">National ID</option>
+                      <option value="DRIVER_LICENSE">Driver's License</option>
                       <option value="AADHAR_CARD">Aadhar Card</option>
                     </select>
                   </div>
@@ -147,9 +181,8 @@ export const RoomDetails = () => {
                       type="date"
                       id="checkInDate"
                       value={bookingData.checkInDate}
-                      onChange={(e) => setBookingData({ ...bookingData, checkInDate: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
+                      disabled
                     />
                   </div>
                   <div>
@@ -160,9 +193,8 @@ export const RoomDetails = () => {
                       type="date"
                       id="checkOutDate"
                       value={bookingData.checkOutDate}
-                      onChange={(e) => setBookingData({ ...bookingData, checkOutDate: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
+                      disabled
                     />
                   </div>
                   <div>
@@ -173,10 +205,8 @@ export const RoomDetails = () => {
                       type="number"
                       id="numberOfGuests"
                       value={bookingData.numberOfGuests}
-                      onChange={(e) => setBookingData({ ...bookingData, numberOfGuests: +e.target.value })}
-                      min="1"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
+                      disabled
                     />
                   </div>
                   <div>
@@ -218,9 +248,21 @@ export const RoomDetails = () => {
                   </div>
                   <button
                     type="submit"
-                    className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition"
+                    disabled={isBooking}
+                    className={`w-full px-6 py-3 rounded-lg transition ${
+                      isBooking 
+                        ? 'bg-gray-400 cursor-not-allowed' 
+                        : 'bg-blue-500 hover:bg-blue-600 text-white'
+                    }`}
                   >
-                    Confirm Booking
+                    {isBooking ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                        Processing...
+                      </div>
+                    ) : (
+                      'Confirm Booking'
+                    )}
                   </button>
                 </form>
               )}

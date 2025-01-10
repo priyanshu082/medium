@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Appbar } from '@/components/Appbar';
+import axios from 'axios';
+import { BACKEND_URL } from '@/config';
 
 const RoomManagement = () => {
   const [formData, setFormData] = useState({
@@ -18,25 +20,27 @@ const RoomManagement = () => {
   const handleSubmit = async (e:any) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/rooms/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', userId: localStorage.getItem('id') || '' },
-        body: JSON.stringify({
-          ...formData,
-          capacity: parseInt(formData.capacity),
-        
-        })
+      const response = await axios.post(`${BACKEND_URL}/api/v1/rooms/create`, {
+        ...formData,
+        capacity: parseInt(formData.capacity),
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'userId': localStorage.getItem('id')
+        }
       });
-      
-      if (!response.ok) throw new Error('Failed to create room');
+
       setSuccess(true);
+      // Navigate to the newly created room's page
+      window.location.href = `/room/${response.data.room.id}`;
+      
       setFormData({
         number: '',
         category: '',
         capacity: '',
       });
     } catch (err:any) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     }
   };
 

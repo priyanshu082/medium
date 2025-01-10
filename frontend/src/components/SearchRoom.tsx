@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useTotalRooms } from "@/hooks";
-// import { Appbar } from "@/components/Appbar";
 import { Link } from "react-router-dom";
 import { RoomInterface } from "@/hooks";
 import { Spinner } from "./Spinner";
-
-
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Toaster } from "react-hot-toast";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 interface BookingFormData {
   checkIn: string;
@@ -14,73 +18,59 @@ interface BookingFormData {
 }
 
 export const SearchRoom = () => {
-  const { room , loading, error } = useTotalRooms(); // Changed from { rooms, loading, error }
-//   console.log(room);
+  const { room, loading, error } = useTotalRooms();
   const [availableRooms, setAvailableRooms] = useState<RoomInterface[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [bookingData, setBookingData] = useState({
     checkIn: "",
     checkOut: "",
     numberOfGuests: 0,
   });
 
-  // Function to filter available rooms based on booking data
   const filterAvailableRooms = (
     rooms: RoomInterface[],
     bookingData: BookingFormData
   ) => {
-    
     if (!bookingData.checkIn || !bookingData.checkOut || !bookingData.numberOfGuests) {
-      return []; // Return empty array if any required field is missing
+      return [];
     }
-    console.log("in filter function");
 
     const checkIn = new Date(bookingData.checkIn);
     const checkOut = new Date(bookingData.checkOut);
 
-
     return rooms.filter((room) => {
-        // Skip rooms with no capacity for requested guests
-        if (room.capacity < bookingData.numberOfGuests) {
-            return false;
-        }
-        
-      
-        //here is the issue it is skiipping all the rooms even thought the rooms has bookings
-        
-        // If room has no bookings, it's available
-        if (!room.bookings || room.bookings.length === 0) {
-            return true;
-        }
-         console.log(room.number);
-        
+      if (room.capacity < bookingData.numberOfGuests) {
+        return false;
+      }
 
-      // Calculate total guests from overlapping bookings
+      if (!room.bookings || room.bookings.length === 0) {
+        return true;
+      }
+
       let guestsInOverlappingBookings = 0;
 
-      // Check each booking for date overlap
       for (const booking of room.bookings) {
+        if (booking.status !== 'CHECKED_IN' && booking.status !== 'CONFIRMED') {
+          continue;
+        }
+
         const bookingStart = new Date(booking.checkInDate);
         const bookingEnd = new Date(booking.checkOutDate);
 
-        // If dates overlap, add guests from that booking
         if ((checkIn >= bookingStart && checkIn < bookingEnd) ||
             (checkOut > bookingStart && checkOut <= bookingEnd) ||
             (checkIn <= bookingStart && checkOut >= bookingEnd)) {
-          // Convert booking.numberOfGuests to integer before adding
           guestsInOverlappingBookings += parseInt(String(booking.numberOfGuests));
         }
       }
 
-      // Convert all numbers to integers for consistent comparison
       const totalGuests = guestsInOverlappingBookings + parseInt(String(bookingData.numberOfGuests));
       const roomCapacity = parseInt(String(room.capacity));
       
-      console.log("Total guests:", totalGuests, "Room capacity:", roomCapacity);
       return totalGuests <= roomCapacity;
     });
   };
 
-  // Update available rooms whenever bookingData changes
   useEffect(() => {
     if (!loading && room) {
       setAvailableRooms(filterAvailableRooms(room, bookingData));
@@ -95,98 +85,147 @@ export const SearchRoom = () => {
     }));
   };
 
-  if (loading) return<Spinner/>;
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const filteredRooms = availableRooms.filter(room => 
+    room.number.toString().includes(searchQuery)
+  );
+
+  const groupedRooms = filteredRooms.reduce((acc, room) => {
+    const category = room.category;
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(room);
+    return acc;
+  }, {} as Record<string, RoomInterface[]>);
+
+  if (loading) return <Spinner/>;
   if (error) return <div>Error loading rooms: {error}</div>;
   if (!room) return <div>No rooms available</div>;
 
   return (
-    <div>
-      {/* <Appbar /> */}
-      <div className="max-w-8xl mx-auto p-4">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h1 className="text-2xl font-bold mb-4">Room Availability</h1>
-
-          <form className="space-y-4">
-            <div>
-              <label
-                htmlFor="checkIn"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Check-In Date
-              </label>
-              <input
-                type="date"
-                id="checkIn"
-                name="checkIn"
-                value={bookingData.checkIn}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="checkOut"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Check-Out Date
-              </label>
-              <input
-                type="date"
-                id="checkOut"
-                name="checkOut"
-                value={bookingData.checkOut}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="numberOfGuests"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Number of Guests
-              </label>
-              <input
-                type="number"
-                id="numberOfGuests"
-                name="numberOfGuests"
-                value={bookingData.numberOfGuests}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                min="1"
-                required
-              />
-            </div>
-          </form>
-
-          <div className="mt-6">
-            <h2 className="text-xl font-semibold mb-2">Available Rooms</h2>
-            {availableRooms.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {availableRooms.map((room) => (
-                  <div key={room.id} className="border rounded p-4 flex flex-row justify-between">
-                    <h3 className="text-lg font-bold">Room {room.number}</h3>
-                    <p>Category: {room.category}</p>
-                    <p>Capacity: {room.capacity} guests</p>
-                    {/* <p>Price per night: ${room.pricePerNight}</p> */}
-                    {/* <p>Amenities: {room.amenities.join(", ")}</p> */}
-                    <Link to={`/room/${room.id}`}>
-                  <button className="bg-green-500 text-white px-4 py-2 rounded">
-                    Book Now
-                  </button>
-                  </Link>
-                  </div>
-                ))}
+    <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-center" />
+      <div className="container mx-auto px-4 py-8">
+        <Card className="shadow-lg">
+          <CardHeader>
+            <h1 className="text-3xl font-bold tracking-tight">Search Available Rooms</h1>
+            <p className="text-sm text-muted-foreground">Find and book your perfect room</p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-2">
+                <Label htmlFor="search">Room Number</Label>
+                <Input
+                  type="text"
+                  id="search"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  placeholder="Search by room number..."
+                  className="w-full"
+                />
               </div>
-            ) : (
-              <p className="text-gray-500">Please fill in all fields to see available rooms.</p>
-            )}
-          </div>
-        </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="checkIn">Check-In Date</Label>
+                <Input
+                  type="date"
+                  id="checkIn"
+                  name="checkIn"
+                  value={bookingData.checkIn}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="checkOut">Check-Out Date</Label>
+                <Input
+                  type="date"
+                  id="checkOut"
+                  name="checkOut"
+                  value={bookingData.checkOut}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="numberOfGuests">Number of Guests</Label>
+                <Input
+                  type="number"
+                  id="numberOfGuests"
+                  name="numberOfGuests"
+                  value={bookingData.numberOfGuests}
+                  onChange={handleInputChange}
+                  min="1"
+                  required
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <Separator className="my-8" />
+
+            <div className="space-y-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold tracking-tight">Available Rooms</h2>
+                <Badge variant="secondary">
+                  {Object.values(groupedRooms).flat().length} rooms found
+                </Badge>
+              </div>
+
+              {Object.entries(groupedRooms).length > 0 ? (
+                Object.entries(groupedRooms).map(([category, rooms]) => (
+                  <div key={category} className="space-y-4">
+                    <h3 className="text-xl font-semibold capitalize">{category}</h3>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {rooms.map((room) => (
+                        <Card key={room.id} className="overflow-hidden transition-all hover:shadow-lg">
+                          <CardContent className="p-6">
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-lg font-bold">Room {room.number}</h4>
+                                <Badge>{room.category}</Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                Capacity: {room.capacity} guests
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Price: ${room.pricePerNight}/night
+                              </p>
+                            </div>
+                          </CardContent>
+                          <CardFooter className="bg-gray-50 p-4">
+                            <Link 
+                              to={`/room/${room.id}?checkIn=${bookingData.checkIn}&checkOut=${bookingData.checkOut}&numberOfGuests=${bookingData.numberOfGuests}`}
+                              className="w-full"
+                            >
+                              <Button className="w-full" variant="default">
+                                Book Now
+                              </Button>
+                            </Link>
+                          </CardFooter>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <Card className="p-8 text-center">
+                  <p className="text-muted-foreground">
+                    Please fill in all fields to see available rooms
+                  </p>
+                </Card>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

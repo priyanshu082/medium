@@ -160,10 +160,12 @@ const BookingsTable = () => {
 
 export default function Bookings() {
   return (
-    <div className="p-6">
+    <>      
          <Appbar />
+    <div className="p-6">
       <h1 className="text-2xl font-bold my-6 mt-2">Bookings</h1>
       <BookingsTable />
     </div>
+    </>
   );
 }

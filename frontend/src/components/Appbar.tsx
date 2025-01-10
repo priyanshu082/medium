@@ -36,13 +36,13 @@ export const Appbar = () => {
            
             <Link
                 to={'/createRoom'}
-                className="text-black cursor-pointer hover:text-orange-600 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium  text-sm px-2 py-2 text-center "
+                className="text-black cursor-pointer hover:text-orange-600 hover:scale-110 transition-transform duration-200 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium text-sm px-2 py-2 text-center"
             >
                 Create Room
             </Link>
             <Link
                 to={'/bookings'}
-                className="text-black cursor-pointer hover:text-orange-600 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium  text-sm px-2 py-2 text-center "
+                className="text-black cursor-pointer hover:text-orange-600 hover:scale-110 transition-transform duration-200 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium text-sm px-2 py-2 text-center"
             >
                 Bookings
             </Link>

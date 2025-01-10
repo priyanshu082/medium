@@ -18,6 +18,8 @@ export const bookingRouter = new Hono<{
     }
 }>();
 
+
+
 // Protected routes
 bookingRouter.use('/*', authMiddleware);
 
@@ -105,7 +107,7 @@ bookingRouter.post('/bookingRoom', async (c) => {
                  bookedById: userId,
                 guestName: body.guestName,
                 identityCard: body.identityCard,
-                identityType: body.identityType,
+                identityType: body.identityType as "PASSPORT" | "NATIONAL_ID" | "DRIVER_LICENSE" | "AADHAR_CARD",
                 numberOfGuests: body.numberOfGuests,
                 checkInDate: new Date(body.checkInDate),
                 checkOutDate: new Date(body.checkOutDate),
@@ -178,9 +180,10 @@ bookingRouter.get('/allBookings', async (c) => {
 
 
 // Cancel Booking Route
-bookingRouter.post('/cancel/:id', async (c) => {
+bookingRouter.put('/cancel/:id', async (c) => {
     try {
         const { id } = c.req.param();
+        const userId = c.get('userId');
         
         const prisma = new PrismaClient({
             datasourceUrl: c.env.DATABASE_URL,
@@ -188,7 +191,10 @@ bookingRouter.post('/cancel/:id', async (c) => {
         
         // First check if booking exists and is in a cancellable state
         const existingBooking = await prisma.booking.findUnique({
-            where: { id }
+            where: { id },
+            include: {
+                bookedBy: true
+            }
         });
         
         if (!existingBooking) {
@@ -197,6 +203,8 @@ bookingRouter.post('/cancel/:id', async (c) => {
                 message: 'Booking not found'
             }, 404);
         }
+
+
         
         // Only allow cancellation of PENDING or CONFIRMED bookings
         if (existingBooking.status !== 'PENDING' && existingBooking.status !== 'CONFIRMED') {
@@ -213,7 +221,8 @@ bookingRouter.post('/cancel/:id', async (c) => {
                 status: 'CANCELLED',
             },
             include: {
-                room: true
+                room: true,
+                bookedBy: true
             }
         });
         
@@ -237,6 +246,7 @@ bookingRouter.post('/cancel/:id', async (c) => {
 bookingRouter.post('/checkout/:id', async (c) => {
     try {
         const { id } = c.req.param();
+        const userId = c.get('userId');
         
         const prisma = new PrismaClient({
             datasourceUrl: c.env.DATABASE_URL,
@@ -244,7 +254,10 @@ bookingRouter.post('/checkout/:id', async (c) => {
         
         // First check if booking exists and is in CHECKED_IN status
         const existingBooking = await prisma.booking.findUnique({
-            where: { id }
+            where: { id },
+            include: {
+                bookedBy: true
+            }
         });
         
         if (!existingBooking) {
@@ -253,6 +266,8 @@ bookingRouter.post('/checkout/:id', async (c) => {
                 message: 'Booking not found'
             }, 404);
         }
+
+
         
         // Only allow checkout for CHECKED_IN bookings
         if (existingBooking.status !== 'CHECKED_IN') {
@@ -267,9 +282,11 @@ bookingRouter.post('/checkout/:id', async (c) => {
             where: { id },
             data: {
                 status: 'CHECKED_OUT',
+                checkOutDate: new Date() // Add actual checkout time
             },
             include: {
-                room: true
+                room: true,
+                bookedBy: true
             }
         });
         
@@ -290,7 +307,74 @@ bookingRouter.post('/checkout/:id', async (c) => {
 });
 
 
-// Get single booking
+// Check in to a booking
+bookingRouter.put('/checkin/:id', async (c) => {
+    try {
+        const { id } = c.req.param();
+        const userId = c.get('userId');
+
+        const prisma = new PrismaClient({
+            datasourceUrl: c.env.DATABASE_URL,
+        }).$extends(withAccelerate());
+
+        // Find the booking
+        const existingBooking = await prisma.booking.findUnique({
+            where: { id },
+            include: {
+                bookedBy: true
+            }
+        });
+
+        if (!existingBooking) {
+            return c.json({
+                success: false,
+                message: 'Booking not found'
+            }, 404);
+        }
+
+        // Verify user owns this booking
+        // No need to verify booking ownership
+
+        // Only allow check in for CONFIRMED bookings
+        if (existingBooking.status !== 'CONFIRMED') {
+            return c.json({
+                success: false,
+                message: `Cannot check in booking with status: ${existingBooking.status}`
+            }, 400);
+        }
+
+        // Update booking status to CHECKED_IN
+        const checkedInBooking = await prisma.booking.update({
+            where: { id },
+            data: {
+                status: 'CHECKED_IN',
+                checkInDate: new Date() // Add actual check in time
+            },
+            include: {
+                room: true,
+                bookedBy: true
+            }
+        });
+
+        return c.json({
+            success: true,
+            message: 'Check in completed successfully',
+            booking: checkedInBooking
+        });
+
+    } catch (error: any) {
+        console.error(error);
+        return c.json({
+            success: false,
+            message: 'Error during check in',
+            error: error.message
+        }, 500);
+    }
+});
+
+
+
+
 // routes/bookingRouter.js
 bookingRouter.get('/details/:id', async (c) => {
     try {

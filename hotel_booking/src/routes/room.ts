@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
 import { authMiddleware } from '../authmiddleware';
 
-// const prisma = new PrismaClient().$extends(withAccelerate());
+
 
 export const roomRouter = new Hono<{
     Bindings: {
@@ -60,7 +60,7 @@ roomRouter.get('/total', async (c) => {
 
 
 // Protected routes
-// roomRouter.use('/*', authMiddleware);
+roomRouter.use('/*', authMiddleware);
 
 // Get available rooms
 roomRouter.get('/available', async (c) => {
@@ -129,10 +129,13 @@ roomRouter.get('/available', async (c) => {
 // Create room (master only)
 roomRouter.post('/create', async (c) => {
     try {
+        console.log("Creating room");
       const body = await c.req.json();
       const userId = c.get('userId'); // Replace with your auth middleware to fetch user ID
   
-      const prisma = new PrismaClient();
+      const prisma = new PrismaClient({
+        datasourceUrl: c.env.DATABASE_URL,
+    }).$extends(withAccelerate());
   
       // Check if user is a MASTER
       const user = await prisma.user.findUnique({
@@ -165,7 +168,7 @@ roomRouter.post('/create', async (c) => {
   
 
 // Get single room
-roomRouter.get('/:id', async (c) => {
+roomRouter.get('/roomDetails/:id', async (c) => {
     try {
         const { id } = c.req.param();
         

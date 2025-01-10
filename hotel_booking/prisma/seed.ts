@@ -36,7 +36,7 @@ async function main() {
       await prisma.room.create({
         data: {
           number: `${i}`,
-          category: "STANDARD",
+          category: "KUTIA",
           capacity: 10,
           pricePerNight: 100.0,
           amenities: ["WiFi", "Air Conditioning"],
@@ -51,7 +51,7 @@ async function main() {
       await prisma.room.create({
         data: {
           number: `${i}`,
-          category: "PRESIDENTIAL",
+          category: "EP_TENT",
           capacity: 10,
           pricePerNight: 100.0,
           amenities: ["WiFi", "Air Conditioning"],
@@ -67,7 +67,7 @@ async function main() {
       await prisma.room.create({
         data: {
           number: `${i}`,
-          category: "DELUXE",
+          category: "VIP_ROOM",
           capacity: 10,
           pricePerNight: 200.0,
           amenities: ["WiFi", "Air Conditioning", "Mini Bar"],
@@ -83,7 +83,7 @@ async function main() {
       await prisma.room.create({
         data: {
           number: `${i}`,
-          category: "SUITE",
+          category: "SWISS_COTTAGE",
           capacity: 10,
           pricePerNight: 500.0,
           amenities: ["WiFi", "Air Conditioning", "Mini Bar", "Jacuzzi"],
