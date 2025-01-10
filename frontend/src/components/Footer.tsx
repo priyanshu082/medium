@@ -18,7 +18,7 @@ const Footer = () => {
          
         </div>
         <div className="flex flex-col items-center gap-2 md:items-end">
-        <p className="text-center text-lg text-gray-600 mt-2 md:text-left">
+        <p className="text-center text-lg text-gray-600 mt-2 md:text-left font-semibold">
             Created by Priyanshu Singh <br />
             S/O: Mr. Pramod Kumar Singh 
           </p>
