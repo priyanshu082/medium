@@ -3,6 +3,9 @@ import { useTotalRooms } from "@/hooks";
 // import { Appbar } from "@/components/Appbar";
 import { Link } from "react-router-dom";
 import { RoomInterface } from "@/hooks";
+import { Spinner } from "./Spinner";
+
+
 
 interface BookingFormData {
   checkIn: string;
@@ -25,8 +28,9 @@ export const SearchRoom = () => {
     rooms: RoomInterface[],
     bookingData: BookingFormData
   ) => {
-    if (!bookingData.checkIn || !bookingData.checkOut) {
-      return rooms; // If no dates are provided, return all rooms
+    
+    if (!bookingData.checkIn || !bookingData.checkOut || !bookingData.numberOfGuests) {
+      return []; // Return empty array if any required field is missing
     }
     console.log("in filter function");
 
@@ -91,7 +95,7 @@ export const SearchRoom = () => {
     }));
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return<Spinner/>;
   if (error) return <div>Error loading rooms: {error}</div>;
   if (!room) return <div>No rooms available</div>;
 
@@ -179,7 +183,7 @@ export const SearchRoom = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500">No rooms available for the selected dates.</p>
+              <p className="text-gray-500">Please fill in all fields to see available rooms.</p>
             )}
           </div>
         </div>

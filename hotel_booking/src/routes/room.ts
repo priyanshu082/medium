@@ -129,42 +129,40 @@ roomRouter.get('/available', async (c) => {
 // Create room (master only)
 roomRouter.post('/create', async (c) => {
     try {
-        const body = await c.req.json();
-        const userId = c.get('userId');
-
-        const prisma = new PrismaClient({
-            datasourceUrl: c.env.DATABASE_URL,
-        }).$extends(withAccelerate());
-
-        // Check if user is master
-        const user = await prisma.user.findUnique({
-            where: { id: userId }
-        });
-
-        if (user?.role !== 'MASTER') {
-            return c.json({ message: "Unauthorized" }, 403);
-        }
-
-        const room = await prisma.room.create({
-            data: {
-                number: body.number,
-                category: body.category,
-                capacity: body.capacity,
-                pricePerNight: body.pricePerNight,
-                amenities: body.amenities,
-                description: body.description,
-                createdById: userId
-            }
-        });
-
-        return c.json({ room });
+      const body = await c.req.json();
+      const userId = c.get('userId'); // Replace with your auth middleware to fetch user ID
+  
+      const prisma = new PrismaClient();
+  
+      // Check if user is a MASTER
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+  
+      if (user?.role !== 'MASTER') {
+        return c.json({ message: 'Unauthorized' }, 403);
+      }
+  
+      // Create the room
+      const room = await prisma.room.create({
+        data: {
+          number: body.number,
+          category: body.category,
+          capacity: body.capacity,
+          pricePerNight: 100,
+          amenities: ['WiFi', 'TV', 'Air Conditioning', 'Mini Bar', 'Room Service'], // Array of strings containing amenity names
+          description: "This is a beautiful room with modern amenities and comfortable furnishings. Perfect for both business and leisure travelers.",
+          createdById: userId,
+        },
+      });
+  
+      return c.json({ room }, 201);
     } catch (error) {
-        console.error(error);
-        return c.json({
-            message: "Error creating room"
-        }, 500);
+      console.error(error);
+      return c.json({ message: 'Error creating room' }, 500);
     }
-});
+  });
+  
 
 // Get single room
 roomRouter.get('/:id', async (c) => {

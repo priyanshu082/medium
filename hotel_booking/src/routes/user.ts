@@ -66,12 +66,12 @@ userRouter.post('/signin', async (c) => {
             }, 401);
         }
 
-        const token = await sign({ id: user.id }, c.env.JWT_SECRET);
+        // const token = await sign({ id: user.id }, c.env.JWT_SECRET);
 
         return c.json({
-            token,
-            id: user.id,
-            email: user.email
+            // token,
+            user: user,
+            // email: user.email
         });
     } catch (error) {
         console.error(error);

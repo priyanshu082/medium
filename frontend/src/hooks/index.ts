@@ -29,7 +29,7 @@ export interface BookingInterface {
   checkInDate: string;
   checkOutDate: string;
   totalAmount: number; // Added the total amount field
-  status: 'PENDING' | 'CONFIRMED' | 'CHECKED_IN' | 'CANCELLED'; // Booking status as per the Prisma model
+  status: 'PENDING' | 'CONFIRMED' | 'CHECKED_IN' | 'CANCELLED' | 'CHECKED_OUT'; // Booking status as per the Prisma model
   specialRequests?: string; // Optional field
   contactNumber: string;
   contactEmail: string;
@@ -98,7 +98,7 @@ export const useRoom = ({ id }: { id: string }) => {
     axios
       .get(`${BACKEND_URL}/api/v1/rooms/${id}`, {
         headers: {
-          Authorization: localStorage.getItem("token"),
+          Authorization: localStorage.getItem("id"),
         },
       })
       .then((res) => {

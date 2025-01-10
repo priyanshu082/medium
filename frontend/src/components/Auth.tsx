@@ -24,21 +24,52 @@ export const Auth = ({ type }: { type: "signup" | "signin" }) => {
                 `${BACKEND_URL}/api/v1/user/${type === "signup" ? "signup" : "signin"}`,
                 postInputs
             );
-            const jwt = response.data;
-            localStorage.setItem("token", jwt);
+    
+            // Get the user ID from the response
+            const user = response.data.user;
+    
+            // Store user ID in local storage
+            localStorage.setItem("id", user.id);
+            localStorage.setItem("name", user.name);
+            localStorage.setItem("role", user.role);
+    
+            // Show success message and redirect
             setAlertMessage("Login Successful");
-            setAlertType(alertTypeEnum.success)
+            setAlertType(alertTypeEnum.success);
+            
             setTimeout(() => {
                 navigate("/");
-            }, 2000);
-        } catch (e) {
-            //@ts-ignore
-            setAlertMessage(e.message);
-            setAlertType(alertTypeEnum.error)
-            //@ts-ignore
-            console.log(e.message)
+            }, 1000);
+            
+        } catch (e:any) {
+            // Handle error
+            setAlertMessage(e.response?.data?.message || "An error occurred");
+            setAlertType(alertTypeEnum.error);
+            console.error(e.message);
         }
     }
+
+    // async function sendRequest() {
+    //     try {
+    //         const response = await axios.post(
+    //             `${BACKEND_URL}/api/v1/user/${type === "signup" ? "signup" : "signin"}`,
+    //             postInputs
+    //         );
+    //         const id = response.data.id;
+    //         localStorage.setItem("id", id);
+    //         setAlertMessage("Login Successful");
+    //         setAlertType(alertTypeEnum.success)
+    //         setTimeout(() => {
+    //             navigate("/");
+    //         }, 2000);
+    //     } catch (e) {
+    //         //@ts-ignore
+    //         setAlertMessage(e.message);
+    //         setAlertType(alertTypeEnum.error)
+    //         //@ts-ignore
+    //         console.log(e.message)
+    //     }
+    // }
     
 
     return (

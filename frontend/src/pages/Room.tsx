@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useRoom } from '@/hooks';
 import { Appbar } from '@/components/Appbar';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 export const RoomDetails = () => {
   const { id } = useParams();
   const { room, loading, error } = useRoom({ id: id || "" });
 
   const [bookingData, setBookingData] = useState({
-    checkIn: '',
-    checkOut: '',
+    checkInDate: '',
+    checkOutDate: '',
     numberOfGuests: 1,
     guestName: '',
     identityCard: '',
@@ -19,14 +21,14 @@ export const RoomDetails = () => {
     specialRequests: '',
   });
 
-  const handleBookingSubmit = async (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       const response = await fetch('/api/v1/bookings/bookingRoom', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          userId: 'mocked-user-id', // Replace with actual user ID handling
+          userId: localStorage.getItem('id') || '', // Replace with actual user ID handling
         },
         body: JSON.stringify({
           roomId: id,
@@ -49,18 +51,17 @@ export const RoomDetails = () => {
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error loading room details: {error}</div>;
   if (!room) return <div>Room not found</div>;
-  console.log(room)
 
   return (
     <div>
-     <Appbar />
+      <Appbar />
       <div className="max-w-8xl mx-auto p-4">
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h1 className="text-2xl font-bold mb-4">Room {room.number}</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <div className="mb-4">
-                <h2 className="text-xl font-semibold mb-2 w-[80vw]">Current Bookings</h2>
+                <h2 className="text-xl font-semibold mb-2">Current Bookings</h2>
                 {room.bookings && room.bookings.length > 0 ? (
                   <div className="space-y-2">
                     {room.bookings?.map((booking) => (
@@ -72,15 +73,13 @@ export const RoomDetails = () => {
                         <p className="text-sm text-gray-600">
                           Check-out: {new Date(booking.checkOutDate).toLocaleDateString()}
                         </p>
-                        <p className="text-sm text-gray-600">
-                          ID: {booking.identityCard}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Guests: {booking.numberOfGuests}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Status: {booking.status}
-                        </p>
+                        <p className="text-sm text-gray-600">ID: {booking.identityCard}</p>
+                        <p className="text-sm text-gray-600">Guests: {booking.numberOfGuests}</p>
+                        <p className="text-sm text-gray-600">Status: {booking.status}</p>
+                        <Button variant="outline" size="sm" className="mt-2  bg-blue-500 text-white">
+                          <Link to={`/booking/${booking.id}`}>View Details</Link>
+                        </Button>
+                    
                       </div>
                     ))}
                   </div>
@@ -136,6 +135,46 @@ export const RoomDetails = () => {
                       id="identityCard"
                       value={bookingData.identityCard}
                       onChange={(e) => setBookingData({ ...bookingData, identityCard: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="checkInDate" className="block text-sm font-medium text-gray-700">
+                      Check-in Date
+                    </label>
+                    <input
+                      type="date"
+                      id="checkInDate"
+                      value={bookingData.checkInDate}
+                      onChange={(e) => setBookingData({ ...bookingData, checkInDate: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="checkOutDate" className="block text-sm font-medium text-gray-700">
+                      Check-out Date
+                    </label>
+                    <input
+                      type="date"
+                      id="checkOutDate"
+                      value={bookingData.checkOutDate}
+                      onChange={(e) => setBookingData({ ...bookingData, checkOutDate: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="numberOfGuests" className="block text-sm font-medium text-gray-700">
+                      Number of Guests
+                    </label>
+                    <input
+                      type="number"
+                      id="numberOfGuests"
+                      value={bookingData.numberOfGuests}
+                      onChange={(e) => setBookingData({ ...bookingData, numberOfGuests: +e.target.value })}
+                      min="1"
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       required
                     />

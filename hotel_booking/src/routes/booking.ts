@@ -31,7 +31,7 @@ function calculateNights(checkIn: Date, checkOut: Date): number {
 bookingRouter.post('/bookingRoom', async (c) => {
     try {
         const body = await c.req.json();
-
+ const userId = c.get('userId');
         // Initialize Prisma client
         const prisma = new PrismaClient({
             datasourceUrl: c.env.DATABASE_URL,
@@ -102,7 +102,7 @@ bookingRouter.post('/bookingRoom', async (c) => {
         const booking = await prisma.booking.create({
             data: {
                 roomId: body.roomId,
-                bookedById: body.userId,
+                 bookedById: userId,
                 guestName: body.guestName,
                 identityCard: body.identityCard,
                 identityType: body.identityType,
@@ -184,44 +184,64 @@ const prisma = new PrismaClient({
 });
 
 // Get single booking
-// bookingRouter.get('/:id', async (c) => {
-//     try {
-//         const { id } = c.req.param();
-
-//         const prisma = new PrismaClient({
-//             datasourceUrl: c.env.DATABASE_URL,
-//         }).$extends(withAccelerate());
-
-//         const booking = await prisma.booking.findUnique({
-//             where: { id },
-//             include: {
-//                 room: true,
-//                 bookedBy: {
-//                     select: {
-//                         id: true,
-//                         username: true,
-//                     },
-//                 },
-//             },
-//         });
-
-//         if (!booking) {
-//             return c.json({ message: 'Booking not found' }, 404);
-//         }
-
-//         return c.json({ booking });
-//     } catch (error) {
-//         console.error(error);
-//         return c.json(
-//             {
-//                 message: 'Error fetching booking',
-//             },
-//             500
-//         );
-//     }
-// });
+// routes/bookingRouter.js
+bookingRouter.get('/details/:id', async (c) => {
+    try {
+        const { id } = c.req.param();
+        
+        const prisma = new PrismaClient({
+            datasourceUrl: c.env.DATABASE_URL,
+        }).$extends(withAccelerate());
+        
+        const booking = await prisma.booking.findUnique({
+            where: { id },
+            include: {
+                room: true,
+                bookedBy: true,
+            }
+        });
+        
+        if (!booking) {
+            return c.json({ 
+                success: false,
+                message: 'Booking not found' 
+            }, 404);
+        }
+        
+        // Calculate stay duration and other relevant information
+        const checkIn = new Date(booking.checkInDate);
+        const checkOut = new Date(booking.checkOutDate);
+        const stayDuration = Math.ceil(
+          (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        
+        const enhancedBooking = {
+            ...booking,
+            stayDuration,
+            formattedDates: {
+                checkIn: checkIn.toISOString(),
+                checkOut: checkOut.toISOString(),
+                created: booking.createdAt.toISOString(),
+                updated: booking.updatedAt.toISOString()
+            }
+        };
+        
+        return c.json({ 
+            success: true,
+            booking: enhancedBooking 
+        });
+        
+    } catch (error:any) {
+        console.error(error);
+        return c.json({
+            success: false,
+            message: 'Error fetching booking details',
+            error: error.message
+        }, 500);
+    }
+});
 
 // Export the router
-
+// 
 
 

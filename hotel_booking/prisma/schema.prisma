@@ -15,10 +15,10 @@ enum UserRole {
 }
 
 enum RoomCategory {
-  STANDARD
-  DELUXE
-  SUITE
-  PRESIDENTIAL
+  KUTIA
+  VIP_ROOM
+  SWISS_COTTAGE
+  EP_TENT
 }
 
 enum RoomStatus {
