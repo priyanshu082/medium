@@ -40,6 +40,12 @@ export const Appbar = () => {
             >
                 Create Room
             </Link>
+            <Link
+                to={'/bookings'}
+                className="text-black cursor-pointer hover:text-orange-600 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium  text-sm px-2 py-2 text-center "
+            >
+                Bookings
+            </Link>
             <button
                 onClick={() => {
                     localStorage.removeItem('token');

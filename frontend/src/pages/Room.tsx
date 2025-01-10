@@ -207,7 +207,7 @@ export const RoomDetails = () => {
                   </div>
                   <div>
                     <label htmlFor="specialRequests" className="block text-sm font-medium text-gray-700">
-                      Special Requests
+                      Refered by
                     </label>
                     <textarea
                       id="specialRequests"

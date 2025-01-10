@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { BookingInterface } from '@/hooks';
 import { BACKEND_URL } from '@/config';
+import { Appbar } from '@/components/Appbar';
 
 const BookingPage = () => {
   const { id } = useParams();
@@ -72,6 +73,7 @@ const BookingPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
+      
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
       </div>
     );
@@ -79,7 +81,8 @@ const BookingPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen p-6">
+      <div className="min-h-screen p-6">    
+       
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
@@ -98,8 +101,10 @@ const BookingPage = () => {
   }
 
   return (
+    <>
+    <Appbar />
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6 mt-2">
         {/* Booking Header */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex justify-between items-start">
@@ -221,6 +226,7 @@ const BookingPage = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
