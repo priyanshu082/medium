@@ -16,6 +16,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
 
 export const RoomDetails = () => {
   const { id } = useParams();
@@ -51,7 +57,6 @@ export const RoomDetails = () => {
 
       if (response.status === 200) {
         toast.success('Booking successful!');
-        // Redirect or update UI
       }
     } catch (error) {
       console.error('Error booking room:', error);
@@ -73,202 +78,183 @@ export const RoomDetails = () => {
     <div>
       <Appbar />
       <Toaster position="top-center" />
-      <div className="max-w-8xl mx-auto p-4">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h1 className="text-2xl font-bold mb-4">Room {room.number}</h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold mb-2">Current Bookings</h2>
-                {room.bookings && room.bookings.length > 0 ? (
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Guest Name</TableHead>
-                          <TableHead>Check-in</TableHead>
-                          <TableHead>Check-out</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Action</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {room.bookings?.map((booking) => (
-                          <TableRow key={booking.id}>
-                            <TableCell>{booking.guestName}</TableCell>
-                            <TableCell>{new Date(booking.checkInDate).toLocaleDateString()}</TableCell>
-                            <TableCell>{new Date(booking.checkOutDate).toLocaleDateString()}</TableCell>
-                            <TableCell>
-                              <span className={`text-sm ${
-                                booking.status === 'CONFIRMED' ? 'text-green-600' :
-                                booking.status === 'CHECKED_IN' ? 'text-blue-600' :
-                                booking.status === 'CHECKED_OUT' ? 'text-gray-600' :
-                                booking.status === 'CANCELLED' ? 'text-red-600' :
-                                'text-yellow-600'
-                              }`}>{booking.status}</span>
-                            </TableCell>
-                            <TableCell>
-                              <Button variant="outline" size="sm" className="bg-blue-500 text-white">
-                                <Link to={`/booking/${booking.id}`}>View Details</Link>
-                              </Button>
-                            </TableCell>
+      <div className="container mx-auto p-4 bg-gray-50">
+        <Card className="bg-white">
+          <CardContent className="p-6">
+            <h1 className="text-2xl font-bold mb-4">Room {room.number}</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <div className="mb-4 bg-white rounded-sm p-1">
+                  <h2 className="text-xl font-semibold mb-2">Current Bookings</h2>
+                  {room.bookings && room.bookings.length > 0 ? (
+                    <div className="space-y-2">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Guest Name</TableHead>
+                            <TableHead>Check-in</TableHead>
+                            <TableHead>Check-out</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Action</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">No current bookings</p>
+                        </TableHeader>
+                        <TableBody>
+                          {room.bookings?.map((booking) => (
+                            <TableRow key={booking.id}>
+                              <TableCell>{booking.guestName}</TableCell>
+                              <TableCell>{new Date(booking.checkInDate).toLocaleDateString()}</TableCell>
+                              <TableCell>{new Date(booking.checkOutDate).toLocaleDateString()}</TableCell>
+                              <TableCell>
+                                <span className={cn(
+                                  "text-sm",
+                                  booking.status === 'CONFIRMED' && "text-green-600",
+                                  booking.status === 'CHECKED_IN' && "text-blue-600", 
+                                  booking.status === 'CHECKED_OUT' && "text-gray-600",
+                                  booking.status === 'CANCELLED' && "text-red-600",
+                                  booking.status === 'PENDING' && "text-yellow-600"
+                                )}>{booking.status}</span>
+                              </TableCell>
+                              <TableCell>
+                                <Button variant="default" size="sm" asChild>
+                                  <Link to={`/booking/${booking.id}`}>View Details</Link>
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No current bookings</p>
+                  )}
+                </div>
+                <p className="text-muted-foreground mb-2">Category: {room.category}</p>
+                <p className="text-muted-foreground mb-2">Capacity: {room.capacity} guests</p>
+                <p className="text-muted-foreground mb-2">Status: {room.status}</p>
+                <p className="text-muted-foreground mb-2">Price per night: ${room.pricePerNight}</p>
+              </div>
+              <div>
+                {room.status === 'AVAILABLE' && (
+                  <form onSubmit={handleBookingSubmit} className="space-y-4 bg-white rounded-sm p-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="guestName">Guest Name</Label>
+                      <Input
+                        id="guestName"
+                        value={bookingData.guestName}
+                        onChange={(e) => setBookingData({ ...bookingData, guestName: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="identityType">Identity Type</Label>
+                      <Select 
+                        value={bookingData.identityType}
+                        onValueChange={(value) => setBookingData({ ...bookingData, identityType: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select identity type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="PASSPORT">Passport</SelectItem>
+                          <SelectItem value="NATIONAL_ID">National ID</SelectItem>
+                          <SelectItem value="DRIVER_LICENSE">Driver's License</SelectItem>
+                          <SelectItem value="AADHAR_CARD">Aadhar Card</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="identityCard">Identity Card Number</Label>
+                      <Input
+                        id="identityCard"
+                        value={bookingData.identityCard}
+                        onChange={(e) => setBookingData({ ...bookingData, identityCard: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="checkInDate">Check-in Date</Label>
+                      <Input
+                        type="date"
+                        id="checkInDate"
+                        value={bookingData.checkInDate}
+                        disabled
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="checkOutDate">Check-out Date</Label>
+                      <Input
+                        type="date"
+                        id="checkOutDate"
+                        value={bookingData.checkOutDate}
+                        disabled
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="numberOfGuests">Number of Guests</Label>
+                      <Input
+                        type="number"
+                        id="numberOfGuests"
+                        value={bookingData.numberOfGuests}
+                        disabled
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="contactNumber">Contact Number</Label>
+                      <Input
+                        type="tel"
+                        id="contactNumber"
+                        value={bookingData.contactNumber}
+                        onChange={(e) => setBookingData({ ...bookingData, contactNumber: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="contactEmail">Contact Email</Label>
+                      <Input
+                        type="email"
+                        id="contactEmail"
+                        value={bookingData.contactEmail}
+                        onChange={(e) => setBookingData({ ...bookingData, contactEmail: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="specialRequests">Referred by</Label>
+                      <Textarea
+                        id="specialRequests"
+                        value={bookingData.specialRequests}
+                        onChange={(e) => setBookingData({ ...bookingData, specialRequests: e.target.value })}
+                      />
+                    </div>
+
+                    <Button 
+                      type="submit"
+                      disabled={isBooking}
+                      className="w-full"
+                    >
+                      {isBooking ? (
+                        <>
+                          <Spinner />
+                          Processing...
+                        </>
+                      ) : (
+                        'Confirm Booking'
+                      )}
+                    </Button>
+                  </form>
                 )}
               </div>
-              <p className="text-gray-600 mb-2">Category: {room.category}</p>
-              <p className="text-gray-600 mb-2">Capacity: {room.capacity} guests</p>
-              <p className="text-gray-600 mb-2">Status: {room.status}</p>
-              <p className="text-gray-600 mb-2">Price per night: ${room.pricePerNight}</p>
             </div>
-            <div>
-              {room.status === 'AVAILABLE' && (
-                <form onSubmit={handleBookingSubmit} className="space-y-4">
-                  <div>
-                    <label htmlFor="guestName" className="block text-sm font-medium text-gray-700">
-                      Guest Name
-                    </label>
-                    <input
-                      type="text"
-                      id="guestName"
-                      value={bookingData.guestName}
-                      onChange={(e) => setBookingData({ ...bookingData, guestName: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="identityType" className="block text-sm font-medium text-gray-700">
-                      Identity Type
-                    </label>
-                    <select
-                      id="identityType"
-                      value={bookingData.identityType}
-                      onChange={(e) => setBookingData({ ...bookingData, identityType: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="">Select</option>
-                      <option value="PASSPORT">Passport</option>
-                      <option value="NATIONAL_ID">National ID</option>
-                      <option value="DRIVER_LICENSE">Driver's License</option>
-                      <option value="AADHAR_CARD">Aadhar Card</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="identityCard" className="block text-sm font-medium text-gray-700">
-                      Identity Card Number
-                    </label>
-                    <input
-                      type="text"
-                      id="identityCard"
-                      value={bookingData.identityCard}
-                      onChange={(e) => setBookingData({ ...bookingData, identityCard: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="checkInDate" className="block text-sm font-medium text-gray-700">
-                      Check-in Date
-                    </label>
-                    <input
-                      type="date"
-                      id="checkInDate"
-                      value={bookingData.checkInDate}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
-                      disabled
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="checkOutDate" className="block text-sm font-medium text-gray-700">
-                      Check-out Date
-                    </label>
-                    <input
-                      type="date"
-                      id="checkOutDate"
-                      value={bookingData.checkOutDate}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
-                      disabled
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="numberOfGuests" className="block text-sm font-medium text-gray-700">
-                      Number of Guests
-                    </label>
-                    <input
-                      type="number"
-                      id="numberOfGuests"
-                      value={bookingData.numberOfGuests}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-100"
-                      disabled
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="contactNumber" className="block text-sm font-medium text-gray-700">
-                      Contact Number
-                    </label>
-                    <input
-                      type="tel"
-                      id="contactNumber"
-                      value={bookingData.contactNumber}
-                      onChange={(e) => setBookingData({ ...bookingData, contactNumber: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700">
-                      Contact Email
-                    </label>
-                    <input
-                      type="email"
-                      id="contactEmail"
-                      value={bookingData.contactEmail}
-                      onChange={(e) => setBookingData({ ...bookingData, contactEmail: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="specialRequests" className="block text-sm font-medium text-gray-700">
-                      Refered by
-                    </label>
-                    <textarea
-                      id="specialRequests"
-                      value={bookingData.specialRequests}
-                      onChange={(e) => setBookingData({ ...bookingData, specialRequests: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={isBooking}
-                    className={`w-full px-6 py-3 rounded-lg transition ${
-                      isBooking 
-                        ? 'bg-gray-400 cursor-not-allowed' 
-                        : 'bg-blue-500 hover:bg-blue-600 text-white'
-                    }`}
-                  >
-                    {isBooking ? (
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        Processing...
-                      </div>
-                    ) : (
-                      'Confirm Booking'
-                    )}
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

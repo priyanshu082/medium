@@ -5,6 +5,7 @@ import { RoomDetails } from './pages/Room'
 import CreateRoom from './pages/CreateRoom'
 import BookingPage from './pages/BookingPage'
 import Bookings from './pages/Bookings'
+import Footer from './components/Footer'
 // Protected Route wrapper component
 const ProtectedRoute = ({ children }:any) => {
   const id = localStorage.getItem('id')
@@ -35,7 +36,7 @@ function App() {
         <Route path="/createRoom" element={
           <ProtectedRoute>
             <CreateRoom />
-          </ProtectedRoute>
+              </ProtectedRoute>
         } />
         <Route path="/booking/:id" element={
           <ProtectedRoute>
@@ -48,6 +49,7 @@ function App() {
           </ProtectedRoute>
         } />
       </Routes>
+      <Footer />
     </BrowserRouter>
   )
 }
