@@ -51,11 +51,11 @@ export interface UserInterface {
 
 // Hook for fetching total rooms count
 
-interface UseTotalRoomsReturn {
-  totalRooms: any[];
-  loading: boolean;
-  error: Error | null;
-}
+// interface UseTotalRoomsReturn {
+//   totalRooms: any[];
+//   loading: boolean;
+//   error: Error | null;
+// }
 
 export const useTotalRooms = () => {
   const [loading, setLoading] = useState<boolean>(true);

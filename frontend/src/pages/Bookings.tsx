@@ -162,7 +162,7 @@ export default function Bookings() {
   return (
     <div className="p-6">
          <Appbar />
-      <h1 className="text-2xl font-bold my-6 ">Bookings</h1>
+      <h1 className="text-2xl font-bold my-6 mt-2">Bookings</h1>
       <BookingsTable />
     </div>
   );
