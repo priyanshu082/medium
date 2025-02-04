@@ -8,11 +8,11 @@ import Bookings from './pages/Bookings'
 import Footer from './components/Footer'
 // Protected Route wrapper component
 const ProtectedRoute = ({ children }:any) => {
-  const id = localStorage.getItem('id')
+  // const id = localStorage.getItem('id')
   
-  if (!id) {
-    return <Navigate to="/signin" replace />
-  }
+  // if (!id) {
+  //   return <Navigate to="/signin" replace />
+  // }
   
   return children
 }
